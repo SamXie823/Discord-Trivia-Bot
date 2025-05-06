@@ -3,123 +3,70 @@ const { default: axios } = require("axios");
 module.exports = {
   name: "trivia",
   description: "this is the trivia command",
+  
   async execute(message, args) {
-    let getQuestion = async () => {
-      let response = await axios.default.get(
+    async function getQuestion() {
+      const response = await axios.default.get(
         "https://the-trivia-api.com/api/questions?limit=1"
       );
-      let data = response.data;
-      return data;
+      return response.data[0];
     };
-    let questionData = await getQuestion();
-    console.log(questionData[0]);
-
-
-    const question = questionData[0];
-
-    // Randomly choose which answer slot (1 to 4) will hold the correct answer
-    const correctAnsNum = Math.floor(Math.random() * (5 - 1) + 1);
-    let correctAnsEmoji = "";
-
-    function reply(question, ans1, ans2, ans3, ans4, correctAnsEmoji) {
-      message
-        .reply(
-          `${question.question}
-        :regional_indicator_a: ${ans1} 
-        :regional_indicator_b: ${ans2}
-        :regional_indicator_c: ${ans3}
-        :regional_indicator_d: ${ans4}`
-        )
-        .then((sentMessage) => {
-
-          // Filter to accept only valid emoji reactions
-          const filter = (reaction) => {
-            return (
-              reaction.emoji.name == "🇦" ||
-              reaction.emoji.name == "🇧" ||
-              reaction.emoji.name == "🇨" ||
-              reaction.emoji.name == "🇩"
-            );
-          };
-          
-          // Wait for one valid reaction for up to 30 seconds
-          sentMessage
-            .awaitReactions({ filter, max: 1, time: 30000, errors: ["time"] })
-            .then((collected) => {
-              const reaction = collected.first();
-
-              if (reaction.emoji.name === correctAnsEmoji) {
-                sentMessage.react("✅");
-              } else {
-                sentMessage.react("❌");
-              }
-            })
-            .catch((collected) => {
-              sentMessage.edit(
-                `${question.question}
-              :regional_indicator_a: ${ans1} 
-              :regional_indicator_b: ${ans2}
-              :regional_indicator_c: ${ans3}
-              :regional_indicator_d: ${ans4} \n Time ran out. Good luck next time. 🙁`
-              );
-            });
-        });
+    
+    // Shuffle answers and track the correct one
+    function shuffleAnswers(correctAnswer, incorrectAnswers) {
+      const allAnswers = [...incorrectAnswers, correctAnswer];
+      for (let i = allAnswers.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allAnswers[i], allAnswers[j]] = [allAnswers[j], allAnswers[i]];
+      }
+      return allAnswers;
     }
 
-    if (correctAnsNum == 1) {
-      reply(
-        question,
-        question.correctAnswer,
-        question.incorrectAnswers[0],
-        question.incorrectAnswers[1],
-        question.incorrectAnswers[2],
-        "🇦"
-      );
-    } else if (correctAnsNum == 2) {
-      reply(
-        question,
-        question.incorrectAnswers[0],
-        question.correctAnswer,
-        question.incorrectAnswers[1],
-        question.incorrectAnswers[2],
-        "🇧"
-      );
-    } else if (correctAnsNum == 3) {
-      reply(
-        question,
-        question.incorrectAnswers[0],
-        question.incorrectAnswers[1],
-        question.correctAnswer,
-        question.incorrectAnswers[2],
-        "🇨"
-      );
-    } else if (correctAnsNum == 4) {
-      reply(
-        question,
-        question.incorrectAnswers[0],
-        question.incorrectAnswers[1],
-        question.incorrectAnswers[2],
-        question.correctAnswer,
-        "🇩"
-      );
+
+    const question = await getQuestion();
+    const answers = shuffleAnswers(question.correctAnswer, question.incorrectAnswers);
+    const correctIndex = answers.indexOf(question.correctAnswer);
+    const emojiList = ["🇦", "🇧", "🇨", "🇩"];
+
+    // Send the trivia question with choices
+    const sentMessage = await message.reply(
+      `**Trivia Time!**\n${question.question}\n` +
+        answers
+          .map((ans, i) => `${emojiList[i]} ${ans}`)
+          .join("\n")
+    );
+
+    // Add emoji reactions to the message
+    for (let i = 0; i < answers.length; i++) {
+      await sentMessage.react(emojiList[i]);
     }
 
-    message
-      .awaitReactions(
-        (reaction) =>
-          reaction.emoji.name == "🇦" ||
-          reaction.emoji.name == "🇧" ||
-          reaction.emoji.name == "🇨" ||
-          reaction.emoji.name == "🇩",
-        { max: 1, time: 10000 }
-      )
-      .then((collected) => {
-        if (collected.first().emoji.name == correctAnsEmoji) {
-          message.reply("Correct");
-        } else message.reply("Wrong");
-      })
-      .catch(() => {
-        message.reply("No answer after 60 seconds, Triva canceled.");
+    // Set up a reaction filter and wait for user's answer
+    const filter = (reaction, user) => {
+      return (
+        emojiList.includes(reaction.emoji.name) &&
+        user.id === message.author.id // only allow the message author to answer
+      );
+    };
+
+    try {
+      const collected = await sentMessage.awaitReactions({
+        filter,
+        max: 1,
+        time: 30000,
+        errors: ["time"],
       });
+
+      const userReaction = collected.first();
+      const userAnswerIndex = emojiList.indexOf(userReaction.emoji.name);
+
+      if (userAnswerIndex === correctIndex) {
+        message.reply("✅ Correct! Nice job!");
+      } else {
+        message.reply(`❌ Wrong! The correct answer was **${question.correctAnswer}**.`);
+      }
+    } catch (error) {
+      message.reply("⏰ Time's up! Better luck next time.");
+    }
   },
 };
