@@ -28,7 +28,8 @@ cd discord-trivia-bot
 
 ### 3. Create Bot
 
-You can create a bot from the [Discord Developer Portal](https://discord.com/developers/)
+You can create a bot from the [Discord Developer Portal](https://discord.com/developers/). 
+You can get your bot token from the [Discord Developer Portal](https://discord.com/developers/). 
 In the root directory, create a file named config.json and add your bot token:
 
 ```
@@ -37,8 +38,7 @@ In the root directory, create a file named config.json and add your bot token:
 }
 ```
 
-You can get your bot token from the [Discord Developer Portal](https://discord.com/developers/)
-You can add the bot to a server of your choosing from the [Discord Developer Portal](https://discord.com/developers/)
+Then add the bot to a server of your choosing from the [Discord Developer Portal](https://discord.com/developers/)
 
 ### 3. Start Bot
 In the main directory - `node main.js`

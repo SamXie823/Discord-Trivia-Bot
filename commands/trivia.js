@@ -12,12 +12,12 @@ module.exports = {
       return response.data[0];
     };
     
-    // Shuffle answers and track the correct one
+    // Shuffle answers and track the correct one (Fisher-Yates Shuffle)
     function shuffleAnswers(correctAnswer, incorrectAnswers) {
       const allAnswers = [...incorrectAnswers, correctAnswer];
       for (let i = allAnswers.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [allAnswers[i], allAnswers[j]] = [allAnswers[j], allAnswers[i]];
+        const randomIndex = Math.floor(Math.random() * (i + 1));
+        [allAnswers[i], allAnswers[randomIndex]] = [allAnswers[randomIndex], allAnswers[i]];
       }
       return allAnswers;
     }
@@ -37,7 +37,7 @@ module.exports = {
     );
 
     // Add emoji reactions to the message
-    for (let i = 0; i < answers.length; i++) {
+    for (let i = 0; i < emojiList.length; i++) {
       await sentMessage.react(emojiList[i]);
     }
 
