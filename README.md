@@ -11,3 +11,16 @@ This is a simple Discord bot built using the [discord.js](https://discord.js.org
 - Accepts user answers through messages.
 - Informs the user whether their answer was correct or incorrect.
 
+---
+
+## Setup
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/your-username/discord-trivia-bot.git
+cd discord-trivia-bot
+
+
+
+
